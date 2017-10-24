@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Web;
 using TadbirBot.Models;
 using Telegram.Bot;
@@ -20,6 +21,8 @@ namespace TadbirBot
 		public BotConfiguration()
 		{
 			Bot.OnMessage += Bot_OnMessage;
+
+			Bot.StartReceiving();
 		}
 
 		private void Bot_OnMessage(object sender, Telegram.Bot.Args.MessageEventArgs e)
@@ -49,7 +52,7 @@ namespace TadbirBot
 					OnlineUsers.Add(user);
 				}
 
-				if (IsFixContent(message, ref user))
+				if (IsFixContent(message, user))
 				{
 					return;
 				}
@@ -65,7 +68,7 @@ namespace TadbirBot
 			}
 		}
 
-		private bool IsFixContent(Message message, ref UserInfo user)
+		private bool IsFixContent(Message message, UserInfo user)
 		{
 			var result = false;
 			try
@@ -84,10 +87,8 @@ namespace TadbirBot
 						user.UserState = UserState.NewCase;
 						break;
 					case "تماس با ما":
-						ShowContactUs(message);
-						ResetUser(ref user);
-						CreateMainMenu(message, user);
-						result = true;
+						user.UserState = UserState.ContactUs;
+
 						break;
 				}
 			}
@@ -106,7 +107,7 @@ namespace TadbirBot
 
 		private void ShowContactUs(Message message)
 		{
-			throw new NotImplementedException();
+			//throw new NotImplementedException();
 		}
 
 		private bool DecisionMaker(Message message, UserInfo user)
@@ -118,12 +119,31 @@ namespace TadbirBot
 				switch (user.UserState)
 				{
 					case UserState.MainMenu:
+						CreateMainMenu(message, user);
 						break;
 					case UserState.CaseStatus:
-						break;
-					case UserState.EnterContactForStatus:
+						SendMessageToClient(message, "لطفا شماره پیگیری درخواست خود را به صورت عددی و صحیح وارد کنید.", RestartKeyboard());
+						user.UserState = UserState.EnterCaseNumber;
 						break;
 					case UserState.EnterCaseNumber:
+						if (long.TryParse(message.Text, out long caseId))
+						{
+							user.CaseId = caseId;
+							user.UserState = UserState.EnterContactForStatus;
+							SendMessageToClient(message, "لطفا شماره تلفنی که با آن درخواست را ثبت کرده اید ارائه دهید.", ContactKeyboard());
+						}
+						else
+						{
+							SendMessageToClient(message, "لطفا شماره پیگیری درخواست خود را به صورت عددی و صحیح وارد کنید.", RestartKeyboard());
+						}
+						break;
+					case UserState.EnterContactForStatus:
+						user.UserNumber = message.Contact.PhoneNumber;
+						SendMessageToClient(message, "لطفا منتظر بمانید....", RestartKeyboard());
+						Bot.SendChatActionAsync(message.From.Id, ChatAction.Typing);
+						user.CaseStatus = GetCaseStatus(user);
+						SendMessageToClient(message, "درخواست شما در وضعیت زیر است.", RestartKeyboard());
+						SendMessageToClient(message, user.CaseStatus, RestartKeyboard());
 						break;
 					case UserState.NewCase:
 						break;
@@ -134,6 +154,9 @@ namespace TadbirBot
 					case UserState.EnterCaseDescription:
 						break;
 					case UserState.ContactUs:
+						ShowContactUs(message);
+						ResetUser(ref user);
+						CreateMainMenu(message, user);
 						break;
 					default:
 						break;
@@ -147,6 +170,40 @@ namespace TadbirBot
 				//throw;
 			}
 			return result;
+		}
+
+		private string GetCaseStatus(UserInfo user)
+		{
+			return "Status From CRM";
+		}
+
+		private ReplyKeyboardMarkup RestartKeyboard()
+		{
+			var keyboard = new ReplyKeyboardMarkup(new[]
+				{
+					new [] // first row
+                    {
+						new KeyboardButton("شروع دوباره"),
+					}
+				});
+
+			return keyboard;
+		}
+		private ReplyKeyboardMarkup ContactKeyboard()
+		{
+			var keyboard = new ReplyKeyboardMarkup(new[]
+				{
+				new [] // first row
+                    {
+						new KeyboardButton("ارسال شماره"){ RequestContact = true },
+					},
+				new [] // second row
+                    {
+						new KeyboardButton("شروع دوباره"),
+					}
+				});
+
+			return keyboard;
 		}
 
 		private async void CreateMainMenu(Message message, UserInfo user)

@@ -12,7 +12,7 @@ namespace TadbirBot
 
 		protected void Application_Start(object sender, EventArgs e)
 		{
-
+			BotConfiguration botConfiguration = new BotConfiguration();
 		}
 
 		protected void Session_Start(object sender, EventArgs e)
