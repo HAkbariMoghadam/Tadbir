@@ -150,6 +150,7 @@
     <Compile Include="Models\CaseType.cs" />
     <Compile Include="Models\UserInfo.cs" />
     <Compile Include="Models\UserState.cs" />
+    <Compile Include="MSCRMManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <PropertyGroup>
