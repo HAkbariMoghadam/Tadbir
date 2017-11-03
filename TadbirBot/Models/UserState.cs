@@ -8,8 +8,10 @@
 		EnterContactForStatus = 22,
 		NewCase = 3,
 		EnterContactForNew = 31,
-		EnterCaseType = 32,
-		EnterCaseDescription = 33,
+        EnterProduct = 32,
+        EnterTitle = 33,
+        EnterCaseDescription = 34,
+		EnterCaseAttachment = 35,
 		ContactUs = 4,
 
 	}

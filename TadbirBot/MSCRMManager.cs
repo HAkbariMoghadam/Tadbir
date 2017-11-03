@@ -76,8 +76,9 @@ namespace TadbirBot
             return caseId;
         }
 
-        public static string getCaseStatus(OrganizationServiceProxy orgService, String mobilePhone, string ticketNumber)
+        public static string getCaseStatus(string mobilePhone, string ticketNumber)
         {
+            OrganizationServiceProxy orgService = GetOrgService();
             string message = "";
             bool authorize = isAuthorizedUser(orgService, mobilePhone);
 
@@ -185,8 +186,9 @@ namespace TadbirBot
             return entity;
         }
 
-        private static List<String> getProductSubjects(OrganizationServiceProxy orgService, String mobilePhone)
+        public static List<String> getProductSubjects( string mobilePhone)
         {
+            OrganizationServiceProxy orgService = GetOrgService();
             List<string> products = null;
             bool authorize = isAuthorizedUser(orgService, mobilePhone);
 
