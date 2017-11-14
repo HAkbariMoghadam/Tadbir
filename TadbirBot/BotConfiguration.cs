@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -209,6 +210,36 @@ namespace TadbirBot
                         {
                             SendMessageToClient(message, "لطفا توضیحات مورد نیاز برای تیکت را وارد نمایید.", RestartKeyboard());
                         }
+						break;
+					case UserState.EnterCaseAttachment:
+						if (string.IsNullOrWhiteSpace(message.Text) && (message.Document != null || message.Photo != null))
+						{
+							if (message.Document != null)
+							{
+								using (var ms = new MemoryStream())
+								{
+									message.Document.FileStream.CopyTo(ms);
+
+									user.CaseAttachment = ms.ToArray();
+								}
+							}
+							else
+							{
+								message.Photo.CopyTo(user.CaseAttachment, 0);
+							}
+
+							
+							SendMessageToClient(message, "لطفا منتظر بمانید....", RestartKeyboard());
+							Bot.SendChatActionAsync(message.From.Id, ChatAction.Typing);
+							user.CaseId = CreateCase(user);
+							SendMessageToClient(message, "درخواست شما در وضعیت زیر است.", RestartKeyboard());
+							SendMessageToClient(message, string.IsNullOrWhiteSpace(user.CaseId) ? "درخواست شما با مشکل مواجه شده است لطفا دوباره تلاش کنید" : $"درخواست شما با موفقیت با شماره {user.CaseId} ثبت شده است", RestartKeyboard());
+
+						}
+						else
+						{
+							SendMessageToClient(message, "لطفا فایل پیوست تیکت (حداکثر 5 مگابات) در صورت وجود بارگزاری کنید.", RestartKeyboard());
+						}
                         break;
                     case UserState.ContactUs:
                         ShowContactUs(message);
@@ -229,7 +260,12 @@ namespace TadbirBot
             return result;
         }
 
-        private void CreateProductsForUser(Message message, UserInfo user)
+		private string CreateCase(UserInfo user)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void CreateProductsForUser(Message message, UserInfo user)
         {
             SendMessageToClient(message, "لطفا منتظر بمانید....", RestartKeyboard());
             Bot.SendChatActionAsync(message.From.Id, ChatAction.Typing);

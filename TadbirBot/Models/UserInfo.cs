@@ -18,6 +18,7 @@ namespace TadbirBot.Models
 		public string CaseStatus { get; set; }
 		public string CaseProduct { get; set; }
         public string CaseTitle { get; set; }
-        public UserState UserState { get; set; }
+		public byte[] CaseAttachment { get; set; }
+		public UserState UserState { get; set; }
 	}
 }
