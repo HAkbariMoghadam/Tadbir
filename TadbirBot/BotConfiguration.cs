@@ -49,7 +49,6 @@ namespace TadbirBot
                         UserState = UserState.MainMenu
                     };
 
-
                     OnlineUsers.Add(user);
                 }
 
@@ -70,6 +69,7 @@ namespace TadbirBot
             }
             catch (Exception)
             {
+                
             }
         }
 
@@ -99,6 +99,8 @@ namespace TadbirBot
             }
             catch (Exception)
             {
+
+                //??? in bayab true shavad
                 result = false;
             }
 
@@ -120,7 +122,6 @@ namespace TadbirBot
             var result = false;
             try
             {
-
                 switch (user.UserState)
                 {
                     case UserState.MainMenu:
@@ -150,7 +151,7 @@ namespace TadbirBot
                             SendMessageToClient(message, "لطفا منتظر بمانید....", RestartKeyboard());
                             Bot.SendChatActionAsync(message.From.Id, ChatAction.Typing);
                             user.CaseStatus = GetCaseStatus(user);
-                            SendMessageToClient(message, "درخواست شما در وضعیت زیر است.", RestartKeyboard());
+                            //SendMessageToClient(message, "درخواست شما در وضعیت زیر است.", RestartKeyboard());
                             SendMessageToClient(message, user.CaseStatus, RestartKeyboard());
                         }
                         else
@@ -364,7 +365,7 @@ namespace TadbirBot
                     }
                 });
 
-                SendMessageToClient(message, "به بات خدمت رسان تدبیر خوش آمدید", keyboard);
+                SendMessageToClient(message, "به بات خدمت رسان گروه رایانه ای تدبیرپرداز خوش آمدید", keyboard);
             }
             catch (Exception)
             {

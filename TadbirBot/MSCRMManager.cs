@@ -51,32 +51,7 @@ namespace TadbirBot
             return authorize;
         }
 
-        public static Guid createCase(OrganizationServiceProxy orgService, String mobilePhone, string productSubject, string title)
-        {
-            Guid caseId = Guid.Empty;
-            bool authorize = isAuthorizedUser(orgService, mobilePhone);
-
-            if (authorize)
-            {
-                Entity contact = getRelatedEntity(orgService, "contact", new ColumnSet(new String[] { "contactid", "mobilephone", "parentcustomerid", "new_accesstotickets" }), "mobilephone", mobilePhone);
-
-                //get selected product subject
-                Entity productSubjectEn = getRelatedEntity(orgService, "new_productsubject", new ColumnSet(new String[] { "new_productsubjectid", "new_name" }), "new_name", productSubject);
-
-                Entity caseEn = new Entity("incident");
-                caseEn["title"] = title;
-                caseEn["new_productsubject"] = new EntityReference("new_productsubject", productSubjectEn.Id);
-                caseEn["customerid"] = contact["parentcustomerid"];
-                caseEn["primarycontactid"] = new EntityReference("contact", contact.Id);
-                caseEn["caseorigincode"] = new OptionSetValue(5);
-                caseEn["casetypecode"] = new OptionSetValue(3);//Question = 1, Problem = 2, Request = 3
-                caseEn["new_showinsite"] = true;
-                caseId = orgService.Create(caseEn);
-            }
-            return caseId;
-        }
-
-        public static string getCaseStatus(string mobilePhone, string ticketNumber)
+        public static string createCase(String mobilePhone, string productSubject, string title, string caseDescription, string body, string filename, int filesize, string mimetype)
         {
             OrganizationServiceProxy orgService = GetOrgService();
             string message = "";
@@ -84,50 +59,109 @@ namespace TadbirBot
 
             if (authorize)
             {
-                Entity contact = getRelatedEntity(orgService, "contact", new ColumnSet(new String[] { "contactid", "mobilephone", "parentcustomerid", "new_accesstotickets" }), "mobilephone", mobilePhone);
-                if (contact != null)
+                List<string> products = getProductSubjects(mobilePhone);
+                string product = products.FirstOrDefault(t => t.Contains(productSubject));
+
+                if (product != null)
                 {
+                    Entity contact = getRelatedEntity(orgService, "contact", new ColumnSet(new String[] { "contactid", "mobilephone", "parentcustomerid", "new_accesstotickets" }), "mobilephone", mobilePhone);
 
-                    QueryExpression queryExpression = new QueryExpression("incident");
-                    queryExpression.ColumnSet = new ColumnSet(new String[] { "incidentid", "customerid", "statuscode", "ticketnumber", "statecode", "title" });
-                    queryExpression.Criteria.AddCondition("ticketnumber", ConditionOperator.Equal, ticketNumber);
-                    queryExpression.Criteria.AddCondition("customerid", ConditionOperator.Equal, ((EntityReference)contact["parentcustomerid"]).Id);
+                    //get selected product subject
+                    Entity productSubjectEn = getRelatedEntity(orgService, "new_productsubject", new ColumnSet(new String[] { "new_productsubjectid", "new_name" }), "new_name", productSubject);
 
-                    EntityCollection entityCollection = orgService.RetrieveMultiple(queryExpression);
+                    Entity caseEn = new Entity("incident");
+                    caseEn["title"] = title;
+                    caseEn["new_productsubject"] = new EntityReference("new_productsubject", productSubjectEn.Id);
+                    caseEn["customerid"] = contact["parentcustomerid"];
+                    caseEn["primarycontactid"] = new EntityReference("contact", contact.Id);
+                    caseEn["caseorigincode"] = new OptionSetValue(5);
+                    caseEn["casetypecode"] = new OptionSetValue(3);//Question = 1, Problem = 2, Request = 3
+                    caseEn["new_showinsite"] = true;
+                    Guid caseId = orgService.Create(caseEn);
 
-                    if (entityCollection.Entities.Count > 0)
-                    {
-                        Entity caseEn = entityCollection.Entities[0];
+                    //create note
+                    CreateNotes(body, filename, filesize, mimetype, caseId, caseDescription);
 
-                        if (Convert.ToInt32(caseEn["statecode"]) == 1)// Resolved
-                            message = "تیکت شما با موضوع " + (string)caseEn["title"] + " در وضعیت 'حل شده' قرار گرفت";
+                    Entity incident = orgService.Retrieve("incident", caseId, new ColumnSet(new string[] { "incidentid", "ticketnumber" }));
 
-                        else if (Convert.ToInt32(caseEn["statecode"]) == 2)// Cancel
-                            message = "تیکت شما با موضوع " + (string)caseEn["title"] + " در وضعیت 'لغو شده' قرار گرفت";
-
-                        else if (Convert.ToInt32(caseEn["statecode"]) == 0)// Active
-                        {
-                            Entity lstNote = getLastNote(orgService, caseEn.Id);
-                            if (lstNote != null)
-                                message = "همکار گرامی: تیکت شما در وضعیت فعال قرار دارد" + Environment.NewLine + "آخرین یادداشت ثبت شده: " + Environment.NewLine + ((String)lstNote["notetext"]).Remove(0, 2);
-                            else
-                                message = "تیکت شما با موضوع " + (string)caseEn["title"] + " در وضعیت 'فعال' قرار دارد";
-                        }
-                    }
+                    if (incident.Contains("ticketnumber"))
+                        message = "تیکت شما به شماره " + (string)incident["ticketnumber"] + "ثبت گردید.";
+                    else
+                        message = "تیکت با موفقیت ثبت گردید";
                 }
+                else
+                    message = "برای محصول انتخابی مجوز ثبت تیکت ندارید، لطفاً با واحد پشتیبانی تماس بگیرید";
+
             }
             else
-                message = "شما مجوز دریافت وضعیت تیکت را ندارید، لطفاً با واحد پشتیبانی تماس بگیرید";
-
-            Entity entity = getRelatedEntity(orgService, "incident", new ColumnSet(new String[] { "incidentid", "ticketnumber" }), "ticketnumber", ticketNumber);
-            string status = Convert.ToString(entity["statuscode"]);
+                message = "شما مجوز ثبت تیکت را ندارید، لطفاً با واحد پشتیبانی تماس بگیرید";
 
             return message;
         }
 
-        public static void CreateNotes(IOrganizationService xrmService, string body, string filename, int filesize, string mimetype, Guid objectid, string nottext)
+        public static string getCaseStatus(string mobilePhone, string ticketNumber)
         {
-            //Entity note = new Entity("annotation");
+            string message = "";
+            try
+            {
+                OrganizationServiceProxy orgService = GetOrgService();
+                
+                bool authorize = isAuthorizedUser(orgService, mobilePhone);
+
+                if (authorize)
+                {
+                    Entity contact = getRelatedEntity(orgService, "contact", new ColumnSet(new String[] { "contactid", "mobilephone", "parentcustomerid", "new_accesstotickets" }), "mobilephone", mobilePhone);
+                    if (contact != null)
+                    {
+
+                        QueryExpression queryExpression = new QueryExpression("incident");
+                        queryExpression.ColumnSet = new ColumnSet(new String[] { "incidentid", "customerid", "ticketnumber", "statecode", "title" });
+                        queryExpression.Criteria.AddCondition("ticketnumber", ConditionOperator.Equal, ticketNumber);
+                        queryExpression.Criteria.AddCondition("customerid", ConditionOperator.Equal, ((EntityReference)contact["parentcustomerid"]).Id);
+
+                        EntityCollection entityCollection = orgService.RetrieveMultiple(queryExpression);
+
+                        if (entityCollection.Entities.Count > 0)
+                        {
+                            Entity caseEn = entityCollection.Entities[0];
+                            int caseStatus = ((OptionSetValue)caseEn["statecode"]).Value;
+
+                            switch (caseStatus)
+                            {
+                                case 1://resolve
+                                    message = "تیکت شما با موضوع " + (string)caseEn["title"] + " در وضعیت 'حل شده' قرار گرفت";
+                                    break;
+                                case 2://cancel
+                                    message = "تیکت شما با موضوع " + (string)caseEn["title"] + " در وضعیت 'لغو شده' قرار گرفت";
+                                    break;
+                                case 0://Active
+                                    {
+                                        Entity lstNote = getLastNote(orgService, caseEn.Id);
+                                        if (lstNote != null)
+                                            message = "همکار گرامی: تیکت شما در وضعیت فعال قرار دارد" + Environment.NewLine + "آخرین یادداشت ثبت شده: " + Environment.NewLine + ((String)lstNote["notetext"]).Remove(0, 2);
+                                        else
+                                            message = "تیکت شما با موضوع " + (string)caseEn["title"] + " در وضعیت 'فعال' قرار دارد";
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                }
+                else
+                    message = "شما مجوز دریافت وضعیت تیکت را ندارید، لطفاً با واحد پشتیبانی تماس بگیرید";          
+            }
+            catch
+            {
+                message = "خطا در دریافت وضعیت تیکت";
+            }
+            return message;
+        }
+
+        public static void CreateNotes( string body, string filename, int filesize, string mimetype, Guid objectid, string nottext)
+        {
+            OrganizationServiceProxy orgService = GetOrgService();
             if (body != "" && nottext == "")
             {
                 Entity note = new Entity("annotation");
@@ -138,7 +172,7 @@ namespace TadbirBot
                 note["isdocument"] = true;
                 note["objecttypecode"] = "incident";
                 note["objectid"] = new EntityReference("incident", objectid);
-                xrmService.Create(note);
+                orgService.Create(note);
             }
             if (nottext != "" && body == "")
             {
@@ -146,7 +180,7 @@ namespace TadbirBot
                 note["notetext"] = nottext;
                 note["objecttypecode"] = "incident";
                 note["objectid"] = new EntityReference("incident", objectid);
-                xrmService.Create(note);
+                orgService.Create(note);
             }
             if (nottext != "" && body != "")
             {
@@ -159,7 +193,7 @@ namespace TadbirBot
                 note["notetext"] = nottext;
                 note["objecttypecode"] = "incident";
                 note["objectid"] = new EntityReference("incident", objectid);
-                xrmService.Create(note);
+                orgService.Create(note);
             }
 
         }
