@@ -105,7 +105,7 @@ namespace TadbirBot
             try
             {
                 OrganizationServiceProxy orgService = GetOrgService();
-                
+
                 bool authorize = isAuthorizedUser(orgService, mobilePhone);
 
                 if (authorize)
@@ -150,7 +150,7 @@ namespace TadbirBot
                     }
                 }
                 else
-                    message = "شما مجوز دریافت وضعیت تیکت را ندارید، لطفاً با واحد پشتیبانی تماس بگیرید";          
+                    message = "شما مجوز دریافت وضعیت تیکت را ندارید، لطفاً با واحد پشتیبانی تماس بگیرید";
             }
             catch
             {
@@ -159,7 +159,7 @@ namespace TadbirBot
             return message;
         }
 
-        public static void CreateNotes( string body, string filename, int filesize, string mimetype, Guid objectid, string nottext)
+        public static void CreateNotes(string body, string filename, int filesize, string mimetype, Guid objectid, string nottext)
         {
             OrganizationServiceProxy orgService = GetOrgService();
             if (body != "" && nottext == "")
@@ -220,10 +220,10 @@ namespace TadbirBot
             return entity;
         }
 
-        public static List<String> getProductSubjects( string mobilePhone)
+        public static List<String> getProductSubjects(string mobilePhone)
         {
             OrganizationServiceProxy orgService = GetOrgService();
-            List<string> products = null;
+            List<string> products = new List<string>();
             bool authorize = isAuthorizedUser(orgService, mobilePhone);
 
             if (authorize)
@@ -243,11 +243,8 @@ namespace TadbirBot
                 EntityCollection entities = orgService.RetrieveMultiple(query);
                 if (entities.Entities.Count > 0)
                 {
-                    for (int i = 0; i < entities.Entities.Count; i++)
-                    {
-                        Entity productSubject = entities.Entities[i];
-                        products.Add((String)productSubject["new_name"]);
-                    }
+                    foreach (Entity entity in entities.Entities)
+                        products.Add((string)entity["new_name"]);              
                 }
             }
             return products;
