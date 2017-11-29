@@ -164,6 +164,8 @@ namespace TadbirBot
                                     break;
                             }
                         }
+                        else
+                            message = "شماره تیکت وارد شده صحیح نمی باشد، لطفاً با واحد پشتیبانی تماس بگیرید";
                     }
                 }
                 else
