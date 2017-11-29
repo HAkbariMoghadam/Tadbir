@@ -106,8 +106,6 @@ namespace TadbirBot
             }
             catch (Exception)
             {
-
-                //??? in bayab true shavad
                 result = false;
             }
 
@@ -223,7 +221,7 @@ namespace TadbirBot
                         {
                             user.CaseDescription = message.Text;
                             user.UserState = UserState.EnterCaseAttachment;
-                            SendMessageToClient(message, "لطفا فایل پیوست تیکت (حداکثر 5 مگابات) در صورت وجود بارگزاری کنید.", CreateNoDocKeyboeard());
+                            SendMessageToClient(message, "لطفا فایل پیوست تیکت (حداکثر 5 مگابایت) در صورت وجود بارگزاری کنید.", CreateNoDocKeyboeard());
                         }
                         else
                         {
@@ -253,14 +251,12 @@ namespace TadbirBot
                                 user.CaseFileType = "image/xyz";
                             }
 
-
                             SendMessageToClient(message, "لطفا منتظر بمانید....", RestartKeyboard());
                             Bot.SendChatActionAsync(message.From.Id, ChatAction.Typing);
                             var responseMessage = CreateCase(user);
-                            // SendMessageToClient(message, "درخواست شما در وضعیت زیر است.", RestartKeyboard());
+                            //SendMessageToClient(message, "درخواست شما در وضعیت زیر است.", RestartKeyboard());
                             //SendMessageToClient(message, string.IsNullOrWhiteSpace(user.CaseId) ? "درخواست شما با مشکل مواجه شده است لطفا دوباره تلاش کنید" : $"درخواست شما با موفقیت با شماره {user.CaseId} ثبت شده است", RestartKeyboard());
                             SendMessageToClient(message, responseMessage, RestartKeyboard());
-
                         }
                         else
                         {
@@ -380,7 +376,10 @@ namespace TadbirBot
 
         private string CreateCase(UserInfo user)
         {
-            return MSCRMManager.createCase(user.UserNumber, user.CaseProduct, user.CaseTitle, user.CaseDescription, Convert.ToBase64String(user.CaseAttachment), user.CaseFileName, user.CaseFileSize, user.CaseFileType);
+            if (user.CaseAttachment != null)
+                return MSCRMManager.createCase(user.UserNumber, user.CaseProduct, user.CaseTitle, user.CaseDescription, Convert.ToBase64String(user.CaseAttachment), user.CaseFileName, user.CaseFileSize, user.CaseFileType);
+            else
+                return MSCRMManager.createCase(user.UserNumber, user.CaseProduct, user.CaseTitle, user.CaseDescription, "", user.CaseFileName, user.CaseFileSize, user.CaseFileType);
         }
 
         private void CreateProductsForUser(Message message, UserInfo user)
