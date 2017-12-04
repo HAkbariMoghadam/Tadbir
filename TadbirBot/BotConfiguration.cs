@@ -119,7 +119,7 @@ namespace TadbirBot
 
         private void ShowContactUs(Message message)
         {
-            Bot.SendLocationAsync(message.Chat.Id, (float)35.7157657, (float)51.4227443);
+            Bot.SendLocationAsync(message.Chat.Id, (float)35.7210427, (float)51.4249957);
             Thread.Sleep(100);
 
             var url = InlineKeyboardButton.WithUrl("سایت تدبیر پرداز", "https://www.etadbir.com");
@@ -422,6 +422,10 @@ namespace TadbirBot
             if (phone.StartsWith("98") && phone.Length == 12)
             {
                 return "0" + phone.Substring(2);
+            }
+            else if (phone.StartsWith("+98") && phone.Length == 13)
+            {
+                return "0" + phone.Substring(3);
             }
             else
             {
